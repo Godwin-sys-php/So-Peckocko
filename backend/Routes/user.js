@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const limit = require('../Middleware/limit');
+const limit = require('../Middleware/limitUser');
 
 const userCtrl = require("../Controllers/user");
 

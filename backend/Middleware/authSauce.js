@@ -4,7 +4,6 @@
 */
 
 // Les modules
-const jwt = require('jsonwebtoken');// Le jwt
 const mongoSanitize = require('mongo-sanitize');// mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
 const protectToXss = require('xss');// xss pour se protéger des attaques xss
 const Sauce = require('../Models/Sauce');// Le Schema des sauces

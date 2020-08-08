@@ -37,7 +37,7 @@ module.exports = (req, res, next) => {
         })
         .catch(error => res.status(500).json({ error }))
     }
-  } catch(error) {
+  } catch (error) {
     res.status(401).json({
       error: new Error(error)
     });
