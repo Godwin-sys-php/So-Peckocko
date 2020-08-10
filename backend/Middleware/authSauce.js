@@ -5,7 +5,6 @@
 
 // Les modules
 const mongoSanitize = require('mongo-sanitize');// mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
-const protectToXss = require('xss');// xss pour se protéger des attaques xss
 const Sauce = require('../Models/Sauce');// Le Schema des sauces
 
 module.exports = (req, res, next) => {
@@ -16,8 +15,8 @@ module.exports = (req, res, next) => {
     });
   */
   try {
-    const sauceId = protectToXss(req.params.id);
-    Sauce.findOne({ _id: mongoSanitize(sauceId) }) // On vérifie si la sauce existe bien en base de donnée
+    const sauceId = mongoSanitize(req.params.id);
+    Sauce.findOne({ _id: sauceId }) // On vérifie si la sauce existe bien en base de donnée
       .then(sauce => {
         if (!sauce) {// Si elle n'existe pas
           throw 'sauce inexistante';// Une nouvelle erreur
@@ -31,8 +30,6 @@ module.exports = (req, res, next) => {
       })
       .catch(error => res.status(500).json({ error }))
   } catch(error) {
-    res.status(401).json({
-      error: new Error(error)
-    });
+    res.status(401).json({ error: new Error(error) });
   }
 };

@@ -1,133 +1,164 @@
+// Les modules
 const mongoSanitize = require("mongo-sanitize"); // mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
 const protectToXss = require("xss"); // xss pour se protéger des attaques xss
-const fs = require('fs');
+const fs = require('fs');// le module file system pour faire des actions sur des fichiers
 
-const Sauce = require("../Models/Sauce");
+const Sauce = require("../Models/Sauce");// On importe le model des sauces
 
-exports.getAll = (req, res) => {
-  Sauce.find()
+exports.getAll = (req, res) => {// Pour récuperer toutes les sauces
+  Sauce.find()// On récupère toute les sauces
     .then((sauces) => {
-      res.status(200).json(sauces);
+      res.status(200).json(sauces);// Lorsqu'on les a, on mets un statut 200 et on envoi le json
     })
-    .catch((error) => {
-      res.status(400).json({
-        error: error,
+    .catch((error) => {// On cas d'erreur, on considère que le problème vient du serveur et on renvoi un statut 500 avec l'erreur
+      res.status(500).json({
+        error: new Error(error),
       });
     });
 };
 
-exports.get = (req, res) => {
-  Sauce.findOne({ _id: mongoSanitize(protectToXss(req.params.id)) })
-    .then((sauce) => {
-      res.status(200).json(sauce);
-    })
-    .catch((error) => res.status(404).json({ error: error }));
+exports.get = (req, res) => { // Pour récupérer une sauce précise
+  // On mets le tout dans un try catch, parce que s'est possible que l'on ai pas l'id en paramètre de requête
+  try {
+    Sauce.findOne({ _id: mongoSanitize(req.params.id) })// On cherche UNE SAUCE qui a pour id celui dans les paramètre et bien évidemment on la néttoie
+      .then((sauce) => {
+        res.status(200).json(sauce);// Lorsqu'on l'a, on mets un statut 200 et on envoi la sauce au format json
+      })
+      .catch((error) => res.status(404).json({ error: error }));// On cas d'erreur, on considère que l'on a pas trouvé la sauce et on renvoi un statut 404 avec l'erreur
+  } catch (error) {
+    res.status(400).json({ error: new Error(error) });
+  }
 }
 
-exports.add = (req, res) => {
-  const sauceInJson = JSON.parse(req.body.sauce);
-  delete sauceInJson._id;
-  const sauce = new Sauce({
-    ...sauceInJson,
-    imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
-    likes: 0,
-    dislikes: 0,
-    usersLiked: [],
-    usersDisliked: []
-  });
-  console.log(sauce);
-  sauce.save()
-    .then(() => res.status(201).json({ message: "Sauce ajoutée" }))
-    .catch((error) => console.log(error));
+exports.add = (req, res) => {// Pour ajouter une nouvelle sauce
+  // On mets le tout dans un try catch, parce que s'est possible que l'on ai pas tout les éléments dans le corps de la requête
+  try {
+    const sauceInJson = JSON.parse(req.body.sauce);// On parse le JSON
+    delete sauceInJson._id;// Si il y a un _id, on le supprime
+    for (let index in sauceInJson) {// On parcours le l'objet
+      sauceInJson[index] = mongoSanitize(protectToXss(sauceInJson[index]));// Et on remplace chaque élément par un identique néttoyer et protéger des attaques xss
+    }
+    const sauce = new Sauce({// On construit l'objet en mettant certaines valeurs à zero
+      ...sauceInJson,
+      imageUrl: `lolcat`,
+      likes: 0,
+      dislikes: 0,
+      usersLiked: [],
+      usersDisliked: []
+    });
+    sauce.save()// On peut le sauvegarder
+      .then(() => res.status(201).json({ message: "Sauce ajoutée" }))// Si tout s'est bien passé, on mets un statut 201 et on renvoi un message de succès
+      .catch((error) => res.status(500).json({ error: new Error(error) }));// Sinon on considère que la requête est incorrect et on renvoi un statut 400
+  } catch (error) {
+    res.status(400).json({ error: new Error(error) });
+  }
+  
 };
 
-exports.like = (req, res) => {
-  let like = mongoSanitize(req.body.like);
-  let userId = mongoSanitize(req.body.userId);
-  let sauceId = mongoSanitize(req.params.id);
+exports.like = (req, res) => {// Pour liker, disliker, annuler un like ou un dislike
+  //On try catch cette partie pour être sûr que les éléments existe
+  try {
+  // On nettoi les éléments venant du front
+    var like = mongoSanitize(req.body.like);
+    var userId = mongoSanitize(req.body.userId);
+    var sauceId = mongoSanitize(req.params.id);
+  } catch (error) {
+    res.status(400).json({ error: new Error(error) });
+  }
 
-  switch (like) {
-    case 1:
-      Sauce.findOne({ _id: sauceId })
+  switch (like) { // On fonction de la valeur de like
+    case 1:// Si like vaut 1
+      Sauce.findOne({ _id: sauceId })// On récupère avant tout la sauce
           .then((sauce)=> {
-            if (!sauce) {
-              res.status(404).json({ message: "Sauce inexistante" });
-            } else if (sauce.usersLiked.includes(userId) || sauce.usersDisliked.includes(userId)) {
-              res.status(403).json({message: "Sauce déjà liker ou disliker"});
-            } else {
+            if (!sauce) { // Si on ne la trouve pas
+              res.status(404).json({ message: "Sauce inexistante" });// Statut 404 et message disant que la sauce est inexistante
+            } else if (sauce.usersLiked.includes(userId) || sauce.usersDisliked.includes(userId)) {// Sinon si l'utilisateur est déjà dans le tableau des likes ou des dislike
+              res.status(403).json({message: "Sauce déjà liker ou disliker"});// On renvoi un statut 403 et un message disant que la sauce a déjà était liker ou disliker
+            } else {// Sinon tout est bon, on peut la liker
               Sauce.updateOne({_id: sauceId}, {$push: {usersLiked: userId}, $inc: {likes: +1}})
-                  .then(() => res.status(200).json({message: 'Like ajouté'}))
-                  .catch((error) => res.status(400).json({error}));
+                .then(() => res.status(200).json({message: 'Like ajouté'}))
+                .catch((error) => res.status(400).json({ error: new Error(error) }));
             }
           })
-          .catch((error) => res.status(500).json({error}));
+          .catch((error) => res.status(500).json({ error: new Error(error) }));// On cas d'erreur, on considère que c'est le serveur le problème
       break;
     
-    case 0:
-      Sauce.findOne({ _id: sauceId })
+    case 0:// Si like vaut 0
+      Sauce.findOne({ _id: sauceId })// On récupère la sauce
         .then((sauce) => {
-          if (sauce.usersLiked.includes(userId)) {
-            Sauce.updateOne({ _id: sauceId }, { $pull: { usersLiked: userId }, $inc: { likes: -1 } })
+          if (sauce.usersLiked.includes(userId)) {// Si 'utilisateur est dans le tableau des likes
+            Sauce.updateOne({ _id: sauceId }, { $pull: { usersLiked: userId }, $inc: { likes: -1 } })// On annule le like de la sauce
               .then(() => res.status(200).json({ message: 'Like retiré' }))
               .catch((error) => res.status(400).json({ error }));
           }
-          if (sauce.usersDisliked.includes(userId)) {
-            Sauce.updateOne({ _id: sauceId }, { $pull: { usersDisliked: userId }, $inc: { dislikes: -1 } })
+          else if (sauce.usersDisliked.includes(userId)) {// Sinon si il est dans le tableau des dislikes
+            Sauce.updateOne({ _id: sauceId }, { $pull: { usersDisliked: userId }, $inc: { dislikes: -1 } })// On annule le dislike de la sauce
               .then(() => res.status(200).json({ message: 'Dislike retiré' }))
-              .catch((error) => res.status(400).json({ error }));
+              .catch((error) => res.status(400).json({ error: new Error(error) }));
           }
         })
-        .catch((error) => res.status(404).json({ error }));
+        .catch((error) => res.status(404).json({ error: new Error(error) }));
       break;
     
-    case -1:
-      Sauce.findOne({ _id: sauceId })
+    case -1:// Si like vaut -1
+      Sauce.findOne({ _id: sauceId })// On récupère avant tout la sauce
         .then((sauce)=> {
-          if (!sauce) {
-            res.status(404).json({ message: "Sauce inexistante" });
-          } else if (sauce.usersLiked.includes(userId) || sauce.usersDisliked.includes(userId)) {
-            res.status(403).json({message: "Sauce déjà liker ou disliker"});
-          } else {
-            Sauce.updateOne({ _id: sauceId }, { $push: { usersDisliked: userId }, $inc: { dislikes: +1 } })
-                .then(() => {
-                  res.status(200).json({ message: 'Dislike ajouté' });
-                })
-                .catch((error) => res.status(400).json({ error }));
+          if (!sauce) { // Si on ne la trouve pas
+            res.status(404).json({ message: "Sauce inexistante" });// Statut 404 et message disant que la sauce est inexistante
+          } else if (sauce.usersLiked.includes(userId) || sauce.usersDisliked.includes(userId)) {// Sinon si l'utilisateur est déjà dans le tableau des likes ou des dislike
+            res.status(403).json({message: "Sauce déjà liker ou disliker"});// On renvoi un statut 403 et un message disant que la sauce a déjà était liker ou disliker
+          }else {// Sinon tout est bon, on peut la liker
+            Sauce.updateOne({_id: sauceId}, {$push: {usersLiked: userId}, $inc: {dislikes: +1}})
+              .then(() => res.status(200).json({message: 'Dislike ajouté'}))
+              .catch((error) => res.status(400).json({ error: new Error(error) }));
           }
         })
-        .catch((error) => res.status(500).json({error}));
+          .catch((error) => res.status(500).json({ error: new Error(error) }));// On cas d'erreur, on considère que c'est le serveur le problème
       break;
   }
 }
 
-exports.update = (req, res) => {
-    let sauceObject;
-    if (req.file) {
-    Sauce.findOne({ _id: mongoSanitize(protectToXss(req.params.id)) })
-      .then((sauce) => {
-        const filename = sauce.imageUrl.split("/images/")[1];
-        fs.unlinkSync(`images/${filename}`);
-      });
-    sauceObject = {
-      ...JSON.parse(req.body.sauce),
-      imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`
-    };
-  } else {
-    sauceObject = { ...mongoSanitize(req.body) };
+exports.update = (req, res) => {// Pour modifier la sauce
+  try {
+    let sauceObject;// Une variable que aura la nouvelle sauce
+    if (req.file) {// Si il y a un fichier
+      Sauce.findOne({ _id: mongoSanitize(req.params.id) })// On récupère la sauce
+        .then((sauce) => {// Et on supprime l'ancienne image
+          const filename = sauce.imageUrl.split("/images/")[1];
+          fs.unlinkSync(`images/${filename}`);
+        });
+      let sauceInJson = JSON.parse(req.body.sauce);// On parse le JSON de la sauce 
+      delete sauceInJson._id;// On supprime l'id
+      for (let index in sauceInJson) {// On parcours l'objet 
+        sauceInJson[index] = mongoSanitize(protectToXss(sauceInJson[index]));// On nettoie les éléments
+      }
+      sauceObject = {// On construit l'objet
+        ...sauceInJson,
+        imageUrl: `lolp`
+      };
+    } else {// Sinon (donc il n'y a pas de fichier)
+      sauceObject = req.body;// On récupère la sauce 
+      for (let index in sauceInJson) {// On parcours le JSON
+        sauceObject[index] = mongoSanitize(protectToXss(sauceObject[index]));// On nettoie les éléments
+      }
+    }
+    // À la fin, on peut modifier la sauce
+    Sauce.updateOne({ _id: mongoSanitize(req.params.id) }, { ...sauceObject/* <- il correspond à la nouvelle sauce créer plus haut en fonction de la présence du fichier fichier */, _id: mongoSanitize(req.params.id) /* <- pour la presistence de l'id, on le rajoute */  })
+      .then(() => res.status(200).json({ message: "Sauce modifié" }))
+      .catch((error) => res.status(500).json({ error: new Error(error) }));
+  } catch (error) {
+    res.status(400).json({ error: new Error(error) });
   }
-  Sauce.updateOne({ _id: mongoSanitize(protectToXss(req.params.id)) }, { ...sauceObject, _id: mongoSanitize(protectToXss(req.params.id)) })
-    .then(() => res.status(200).json({ message: "Sauce modifié" }))
-    .catch((error) => res.status(500).json({ error }));
 };
 
-exports.delete = (req, res) => {
-  Sauce.findOne({ _id: mongoSanitize(protectToXss(req.params.id)) })
+exports.delete = (req, res) => {// Pour supprimer une sauce
+  Sauce.findOne({ _id: mongoSanitize(req.params.id) })// On la récupère
     .then((sauce) => {
-      const filename = sauce.imageUrl.split("/images/")[1];
-      fs.unlinkSync(`images/${filename}`);
-      Sauce.deleteOne({ _id: mongoSanitize(protectToXss(req.params.id)) })
+      const filename = sauce.imageUrl.split("/images/")[1];// On mets dans une variable le nom du fichier
+      fs.unlinkSync(`images/${filename}`);// On supprimer l'image
+      Sauce.deleteOne({ _id: mongoSanitize(req.params.id) }) // On supprime la sauce
         .then(() => res.status(200).json({ message: "Sauce supprimé" }))
-        .catch((error) => res.status(400).json({ error }));
+        .catch((error) => res.status(400).json({ error: new Error(error) }));
     })
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => res.status(400).json({ error: new Error(error) }));
 };

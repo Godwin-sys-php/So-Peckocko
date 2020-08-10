@@ -6,7 +6,6 @@
 // Les modules
 const jwt = require('jsonwebtoken');// Le jwt
 const mongoSanitize = require('mongo-sanitize');// mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
-const protectToXss = require('xss');// xss pour se protéger des attaques xss
 const User = require('../Models/User');// Le Schema des utilisateurs
 
 module.exports = (req, res, next) => {
@@ -17,8 +16,8 @@ module.exports = (req, res, next) => {
     });
   */
   try {
-    const token = protectToXss(req.headers.authorization.split(' ')[1]);// Récupère le token que l'on va "parser" pour éviter les attaques xss
-    const userId = protectToXss(req.body.userId);// Fait la même chose pour le userId
+    const token = req.headers.authorization.split(' ')[1];// Récupère le token 
+    const userId = req.body.userId;// Récupère le userID
 
     const decodedToken = jwt.verify(token, 'TOKEN_SUPER_SECRET');// Décode le JWT
     const decodedUserId = mongoSanitize(decodedToken.userId);// Vérifie la valeur
@@ -38,8 +37,6 @@ module.exports = (req, res, next) => {
         .catch(error => res.status(500).json({ error }))
     }
   } catch (error) {
-    res.status(401).json({
-      error: new Error(error)
-    });
+    res.status(401).json({ error: new Error(error) });
   }
 };
