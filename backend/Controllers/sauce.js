@@ -40,7 +40,7 @@ exports.add = (req, res) => {// Pour ajouter une nouvelle sauce
     }
     const sauce = new Sauce({// On construit l'objet en mettant certaines valeurs à zero
       ...sauceInJson,
-      imageUrl: `lolcat`,
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
       likes: 0,
       dislikes: 0,
       usersLiked: [],
@@ -91,7 +91,7 @@ exports.like = (req, res) => {// Pour liker, disliker, annuler un like ou un dis
               .then(() => res.status(200).json({ message: 'Like retiré' }))
               .catch((error) => res.status(400).json({ error }));
           }
-          else if (sauce.usersDisliked.includes(userId)) {// Sinon si il est dans le tableau des dislikes
+          if (sauce.usersDisliked.includes(userId)) {// Sinon si il est dans le tableau des dislikes
             Sauce.updateOne({ _id: sauceId }, { $pull: { usersDisliked: userId }, $inc: { dislikes: -1 } })// On annule le dislike de la sauce
               .then(() => res.status(200).json({ message: 'Dislike retiré' }))
               .catch((error) => res.status(400).json({ error: new Error(error) }));
@@ -108,7 +108,7 @@ exports.like = (req, res) => {// Pour liker, disliker, annuler un like ou un dis
           } else if (sauce.usersLiked.includes(userId) || sauce.usersDisliked.includes(userId)) {// Sinon si l'utilisateur est déjà dans le tableau des likes ou des dislike
             res.status(403).json({message: "Sauce déjà liker ou disliker"});// On renvoi un statut 403 et un message disant que la sauce a déjà était liker ou disliker
           }else {// Sinon tout est bon, on peut la liker
-            Sauce.updateOne({_id: sauceId}, {$push: {usersLiked: userId}, $inc: {dislikes: +1}})
+            Sauce.updateOne({_id: sauceId}, {$push: {usersDisliked: userId}, $inc: {dislikes: +1}})
               .then(() => res.status(200).json({message: 'Dislike ajouté'}))
               .catch((error) => res.status(400).json({ error: new Error(error) }));
           }
@@ -134,7 +134,7 @@ exports.update = (req, res) => {// Pour modifier la sauce
       }
       sauceObject = {// On construit l'objet
         ...sauceInJson,
-        imageUrl: `lolp`
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
       };
     } else {// Sinon (donc il n'y a pas de fichier)
       sauceObject = req.body;// On récupère la sauce 

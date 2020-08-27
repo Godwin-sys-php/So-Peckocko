@@ -8,6 +8,7 @@
 const validator = require("validator");// Le validateur
 const passwordValidator = require("password-validator");// Le validateur de mot de passe
 const mongoSanitize = require("mongo-sanitize");// Le nettoyeur mongoDB
+const sha256 = require("sha256");// L'algorithme de cryptage
 
 const User = require('../Models/User');// Le modèle des utilisateurs
 
@@ -20,7 +21,7 @@ module.exports = (req, res, next) => {
       .has().lowercase()                              // Must have lowercase letters
       .has().digits(2)                                // Must have at least 2 digits
     if (validator.isEmail(req.body.email) && schema.validate(req.body.password)) {// Si l'email est un email correct et que le mot de passe et valide
-      User.findOne({ email: mongoSanitize(req.body.email) })// Il nous reste plus qu'à vérifier si un utilisateur ayant la même adresse email existe déjà
+      User.findOne({ email: sha256.x2(mongoSanitize(req.body.email)) })// Il nous reste plus qu'à vérifier si un utilisateur ayant la même adresse email existe déjà
         .then(user => {
           if (!user) { // Si il n'existe pas
             next();// On passe au prochain middleware

@@ -5,8 +5,7 @@
 */
 
 module.exports = (req, res, next) => {
-  console.log(req);
-  if (typeof req.files.image !== undefined) {// Comparable à un isset(req.files.image) en php
+  if (typeof req.files.image !== 'undefined') {// Comparable à un isset(req.files.image) en php
     // Lesw types de fichier autoriser
     const MIME_TYPES = {
       "image/jpg": "jpg",
@@ -32,6 +31,6 @@ module.exports = (req, res, next) => {
       res.status(400).json({ message: 'Format de fichier invalide' });// On renvoi un statut 400 et un message disant que le format du fichier est invalide
     }
   } else {
-    res.status(400).json({ message: "Aucune image attaché" });
+    next();
   }
 };
