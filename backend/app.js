@@ -9,12 +9,14 @@ const fileUpload= require('express-fileupload')
 const userRoute = require("./Routes/user");// Le routeur utilisateurs
 const sauceRoute = require("./Routes/sauce");// Le routeur sauces
 
-// Connexion à mongoDB Atlas
-mongoose.connect('mongodb+srv://Godwin:jyvHF13XqPofLzaB@so-peckocko.c5zur.mongodb.net/<dbname>?retryWrites=true&w=majority',
+const config = require('./config.json');
+
+// Connexion à mongoDB
+mongoose.connect(config.database_string_connection,
   { useNewUrlParser: true,
     useUnifiedTopology: true })
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+  .then(() => console.log('Connexion a MongoDB réussie !'))
+  .catch((error) => console.log('Connexion a MongoDB échouée !'));
 
 const app = express();// Express
 

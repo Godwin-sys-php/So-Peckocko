@@ -3,6 +3,8 @@ const jwt = require("jsonwebtoken");// jsonwebtoken, pour renvoyer au front un t
 const mongoSanitize = require('mongo-sanitize');// mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
 const sha256 = require('sha256');// mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
 
+const config = require('../config.json');
+
 const User = require("../Models/User");// Le model des utilisateurs
 
 exports.signup = (req, res) => { // Pour ajouter un utilisateur
@@ -32,7 +34,7 @@ exports.login = (req, res) => { // Pour connecter un utilisateur
             } else { // Sinon
               res.status(200).json({
                 userId: user._id,// On retourne l'id
-                token: jwt.sign({ userId: user._id }, "TOKEN_SUPER_SECRET", {
+                token: jwt.sign({ userId: user._id }, config.tokenJWT, {
                   expiresIn: "24h",
                 }),// Et le token
               });

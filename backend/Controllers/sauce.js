@@ -121,7 +121,7 @@ exports.like = (req, res) => {// Pour liker, disliker, annuler un like ou un dis
 exports.update = (req, res) => {// Pour modifier la sauce
   try {
     let sauceObject;// Une variable que aura la nouvelle sauce
-    if (req.file) {// Si il y a un fichier
+    if (req.file.filename) {// Si il y a un fichier
       Sauce.findOne({ _id: mongoSanitize(req.params.id) })// On récupère la sauce
         .then((sauce) => {// Et on supprime l'ancienne image
           const filename = sauce.imageUrl.split("/images/")[1];
@@ -136,17 +136,19 @@ exports.update = (req, res) => {// Pour modifier la sauce
         ...sauceInJson,
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
       };
-    } else {// Sinon (donc il n'y a pas de fichier)
+    } else {// Sinon (donc il n'y a pas de fichier)-
       sauceObject = req.body;// On récupère la sauce 
-      for (let index in sauceInJson) {// On parcours le JSON
+      for (let index in sauceObject) {// On parcours le JSON
         sauceObject[index] = mongoSanitize(protectToXss(sauceObject[index]));// On nettoie les éléments
       }
     }
     // À la fin, on peut modifier la sauce
+    console.log(sauceObject);
     Sauce.updateOne({ _id: mongoSanitize(req.params.id) }, { ...sauceObject/* <- il correspond à la nouvelle sauce créer plus haut en fonction de la présence du fichier fichier */, _id: mongoSanitize(req.params.id) /* <- pour la presistence de l'id, on le rajoute */  })
       .then(() => res.status(200).json({ message: "Sauce modifié" }))
       .catch((error) => res.status(500).json({ error: new Error(error) }));
   } catch (error) {
+    console.log(error);
     res.status(400).json({ error: new Error(error) });
   }
 };

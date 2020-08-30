@@ -8,6 +8,8 @@ const jwt = require('jsonwebtoken');// Le jwt
 const mongoSanitize = require('mongo-sanitize');// mongo-sanitize pour vérifier une valeur avant de faire une requête avec en base de donnée
 const User = require('../Models/User');// Le Schema des utilisateurs
 
+const config = require('../config.json');
+
 module.exports = (req, res, next) => {
   /*
     On le mets dans un try catch principalement pour éviter les répétitions de: 
@@ -19,7 +21,7 @@ module.exports = (req, res, next) => {
     const token = req.headers.authorization.split(' ')[1];// Récupère le token 
     const userId = req.body.userId;// Récupère le userID
 
-    const decodedToken = jwt.verify(token, 'TOKEN_SUPER_SECRET');// Décode le JWT
+    const decodedToken = jwt.verify(token, config.tokenJWT);// Décode le JWT
     const decodedUserId = mongoSanitize(decodedToken.userId);// Vérifie la valeur
 
     if (userId && userId !== decodedUserId) { // Si il y a un userId et il est différent de celui qui est dans le JWT

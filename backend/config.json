@@ -1,0 +1,4 @@
+{
+  "database_string_connection": "mongodb+srv://Godwin:jyvHF13XqPofLzaB@so-peckocko.c5zur.mongodb.net/So-Peckoko?retryWrites=true&w=majority",
+  "tokenJWT": "TOKEN_SUPER_SECRET"
+}
