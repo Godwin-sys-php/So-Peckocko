@@ -9,20 +9,22 @@ const fileUpload= require('express-fileupload')
 const userRoute = require("./Routes/user");// Le routeur utilisateurs
 const sauceRoute = require("./Routes/sauce");// Le routeur sauces
 
-const config = require('./config.json');
+require('dotenv').config();
 
 // Connexion à mongoDB
-mongoose.connect(config.database_string_connection,
-  { useNewUrlParser: true,
-    useUnifiedTopology: true })
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
+mongoose.set('useUnifiedTopology', true);
+mongoose.connect(process.env.DATABASE_STRING_CONNECTION)
   .then(() => console.log('Connexion a MongoDB réussie !'))
   .catch((error) => console.log('Connexion a MongoDB échouée !'));
 
 const app = express();// Express
 
-app.use(fileUpload({ createParentPath: true }));
-
 app.use(cors());// On accepte toute les requêtes de n'importe quelle serveur
+
+app.use(fileUpload({ createParentPath: true, limits: { fileSize: 50 * 1024 } }));
 
 // BodyParser
 app.use(bodyParser.json());
