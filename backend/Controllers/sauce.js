@@ -115,13 +115,16 @@ exports.like = (req, res) => {// Pour liker, disliker, annuler un like ou un dis
         })
           .catch((error) => res.status(500).json({ error: new Error(error) }));// On cas d'erreur, on considère que c'est le serveur le problème
       break;
+    default:
+      res.status(400).json({ error: 'invalid like value' });
+      break
   }
 }
 
 exports.update = (req, res) => {// Pour modifier la sauce
   try {
     let sauceObject;// Une variable que aura la nouvelle sauce
-    if (req.file.filename) {// Si il y a un fichier
+    if (req.file) {// Si il y a un fichier
       Sauce.findOne({ _id: mongoSanitize(req.params.id) })// On récupère la sauce
         .then((sauce) => {// Et on supprime l'ancienne image
           const filename = sauce.imageUrl.split("/images/")[1];
